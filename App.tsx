@@ -62,9 +62,6 @@ const handleAddTask = async () => {
   }
 };
 
-    setEditingTask(newTask); 
-  };
-
   const handleTaskClick = (task: Task) => {
     setEditingTask(task);
   };
