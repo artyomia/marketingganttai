@@ -192,3 +192,4 @@ const handleAddTask = async () => {
 };
 
 export default App;
+
