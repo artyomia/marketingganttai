@@ -11,16 +11,21 @@ export type Task = {
   progress?: number;
 };
 
-export async function fetchTasks() {
+export async function createTask(task: any) {
   const { data, error } = await supabase
     .from('tasks')
-    .select('*')
-    .order('created_at', { ascending: true });
+    .insert(task)
+    .select()
+    .single();
 
   if (error) {
-    console.error('Fetch tasks error:', error);
+    console.error('Create task error:', error);
     throw error;
   }
+
+  return data;
+}
+
 
   // Map DB row -> UI Task
   const tasks: Task[] = (data ?? []).map((row: any) => ({
