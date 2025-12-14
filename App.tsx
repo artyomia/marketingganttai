@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, BarChart2, Calendar, Sparkles } from 'lucide-react';
 import GanttChart from './components/GanttChart';
 import StatsDashboard from './components/StatsDashboard';
@@ -6,27 +6,63 @@ import AIModal from './components/AIModal';
 import EditTaskModal from './components/EditTaskModal';
 import { Task, TaskStatus } from './types';
 import { INITIAL_TASKS } from './constants';
+import { fetchTasks, createTask } from './services/tasksService';
 
 const App: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [view, setView] = useState<'gantt' | 'stats'>('gantt');
   const [isAIModalOpen, setAIModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // New Task Handler
-  const handleAddTask = () => {
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      name: 'New Task',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+  useEffect(() => {
+  fetchTasks()
+    .then((data) => {
+      setTasks(data);
+    })
+    .catch((err) => {
+      console.error('Load tasks failed:', err);
+    });
+}, []);
+
+const handleAddTask = async () => {
+  try {
+    // 1) Tạo task theo schema DB (Supabase)
+    const dbTask = {
+      title: 'New Task',
       category: 'Digital',
+      owner: '',
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      progress: 0,
       status: TaskStatus.TODO,
       assignees: [],
-      progress: 0
+      description: '',
     };
-    setTasks([...tasks, newTask]);
-    setEditingTask(newTask); // Immediately open edit modal for new task
+
+    // 2) Lưu vào Supabase
+    const saved = await createTask(dbTask as any);
+
+    // 3) Map dữ liệu DB -> UI Task (để Gantt/Modal hiểu)
+    const uiTask: Task = {
+      id: saved.id,
+      name: saved.title ?? 'New Task',
+      startDate: saved.start_date,
+      endDate: saved.end_date,
+      category: saved.category ?? 'Digital',
+      status: saved.status ?? TaskStatus.TODO,
+      assignees: saved.assignees ?? [],
+      progress: saved.progress ?? 0,
+    };
+
+    // 4) Giữ nguyên hành vi cũ: add vào list + mở modal edit
+    setTasks([...tasks, uiTask]);
+    setEditingTask(uiTask);
+  } catch (err) {
+    console.error('Add task failed:', err);
+  }
+};
+
+    setEditingTask(newTask); 
   };
 
   const handleTaskClick = (task: Task) => {
