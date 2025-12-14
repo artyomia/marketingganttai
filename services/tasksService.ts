@@ -12,19 +12,23 @@ export type Task = {
 };
 
 export async function createTask(task: any) {
+  console.log('createTask payload:', task);
+
   const { data, error } = await supabase
     .from('tasks')
     .insert(task)
     .select()
     .single();
 
+  console.log('createTask result:', { data, error });
+
   if (error) {
-    console.error('Create task error:', error);
     throw error;
   }
 
   return data;
 }
+
 
 
   // Map DB row -> UI Task
